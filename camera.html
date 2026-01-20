@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<!-- 调用相机拍照（尽力前置） -->
+<input type="file" id="takePhoto" accept="image/*" capture="user" />
+
+<!-- 从相册选择 -->
+<input type="file" id="selectFromAlbum" accept="image/*" />
+iiiiiii
+
+<!-- WebRTC 前置摄像头预览与拍照（更可靠，需要 HTTPS/本地 file 不一定可用） -->
+<div>
+  <button id="openFrontCam">打开前置摄像头预览</button>
+  <video id="preview" autoplay playsinline style="width:200px;display:none;"></video>
+  <button id="capture" style="display:none;">拍照</button>
+  <canvas id="canvas" style="display:none;"></canvas>
+</div>
+
+<script>
+	function handleFileSelect(inputEl) {
+  inputEl.addEventListener('change', function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.width = '200px';
+      document.body.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// 分别绑定处理逻辑
+handleFileSelect(document.getElementById('takePhoto'));
+handleFileSelect(document.getElementById('selectFromAlbum'));
+
+// WebRTC 前置摄像头预览与拍照
+const openBtn = document.getElementById('openFrontCam');
+const video = document.getElementById('preview');
+const captureBtn = document.getElementById('capture');
+const canvas = document.getElementById('canvas');
+
+openBtn.addEventListener('click', async () => {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('当前浏览器不支持直接调用摄像头，请使用文件选择框。');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' }, // 尽力使用前置摄像头
+      audio: false
+    });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    captureBtn.style.display = 'inline-block';
+  } catch (err) {
+    alert('无法打开摄像头，请检查权限或在 HTTPS 环境下访问。');
+    console.error(err);
+  }
+});
+
+captureBtn.addEventListener('click', () => {
+  if (!video.srcObject) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const img = document.createElement('img');
+  img.src = canvas.toDataURL('image/png');
+  img.style.width = '200px';
+  document.body.appendChild(img);
+});
+</script>
+</body>
+</html>
