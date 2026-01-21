@@ -16,6 +16,7 @@ iiiiiii
 <!-- WebRTC 前置摄像头预览与拍照（更可靠，需要 HTTPS/本地 file 不一定可用） -->
 <div>
   <button id="openFrontCam">打开前置摄像头预览</button>
+  <button id="toggleCam">切换前/后摄像头</button>
   <video id="preview" autoplay playsinline style="width:200px;display:none;"></video>
   <button id="capture" style="display:none;">拍照</button>
   <canvas id="canvas" style="display:none;"></canvas>
@@ -44,20 +45,24 @@ handleFileSelect(document.getElementById('selectFromAlbum'));
 
 // WebRTC 前置摄像头预览与拍照
 const openBtn = document.getElementById('openFrontCam');
+const toggleBtn = document.getElementById('toggleCam');
 const video = document.getElementById('preview');
 const captureBtn = document.getElementById('capture');
 const canvas = document.getElementById('canvas');
+let currentFacingMode = 'user'; // 默认后置摄像头
+let currentStream = null;
 
-openBtn.addEventListener('click', async () => {
+async function openCamera(facingMode) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     alert('当前浏览器不支持直接调用摄像头，请使用文件选择框。');
     return;
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user' }, // 尽力使用前置摄像头
+      video: { facingMode },
       audio: false
     });
+    currentStream = stream;
     video.srcObject = stream;
     video.style.display = 'block';
     captureBtn.style.display = 'inline-block';
@@ -65,6 +70,15 @@ openBtn.addEventListener('click', async () => {
     alert('无法打开摄像头，请检查权限或在 HTTPS 环境下访问。');
     console.error(err);
   }
+}
+
+openBtn.addEventListener('click', () => {
+  openCamera(currentFacingMode);
+});
+
+toggleBtn.addEventListener('click', () => {
+  currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  openCamera(currentFacingMode);
 });
 
 captureBtn.addEventListener('click', () => {
